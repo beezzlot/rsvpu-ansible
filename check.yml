@@ -1,0 +1,26 @@
+---
+- hosts: localhost
+  tasks: 
+        - name: Check Docker on SRV1
+          shell: curl "{{ lookup('env','comp2_srv1') }}":8080 
+          register: check_srv1
+          failed_when:
+                  - check_srv1.rc == 7
+                  - 'The Docker container on SRV1 dead!!'
+          ignore_errors: true
+        - name: Check Docker on SRV2
+          shell: curl "{{ lookup('env','comp2_srv2') }}":8080
+          register: check_srv2
+          failed_when:
+                  - check_srv2.rc == 7
+                  - 'The Docker container on SRV2 dead!!'
+          ignore_errors: true
+        - name: Check phppgadmin on SRV3
+          shell: curl "{{ lookup('env','comp2_srv3') }}":80
+          register: check_srv3
+          failed_when:
+                  - check_srv3.rc == 7
+                  - 'The phppgadmin on SRV3 dead!!'
+          ignore_errors: true
+
+

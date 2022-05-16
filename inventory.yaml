@@ -1,0 +1,5 @@
+all:
+  hosts:
+    comp2_srv1:
+    comp2_srv2:
+    comp2_srv3:

@@ -1,0 +1,131 @@
+---
+- hosts: all
+  vars_files:
+          - ./users.yml
+  tasks:
+          - name: Apt update
+            apt:
+                    update_cache: yes
+          - name: Open Port for SSH
+            ufw:
+                    state: enabled
+                    rule: allow
+                    port: '22'
+          - name: Open Port for HTTP
+            ufw:
+                    state: enabled
+                    rule: allow
+                    port: '80'
+          - name: Open Port for HTTPx2
+            ufw:
+                    state: enabled
+                    rule: allow
+                    port: '8080'
+          - name: Open port for custom
+            ufw:
+                    state: enabled
+                    rule: allow
+                    port: '1834'
+          - name: Open port for custom x2
+            ufw:
+                    state: enabled
+                    rule: allow
+                    port: '1337'
+          - name: Open port for NTP
+            ufw: 
+                    state: enabled
+                    rule: allow
+                    port: '123'
+          - name: Create user and password
+            user:
+                    name: "{{ username }}"
+                    password: "{{ password }}"
+                    shell: /bin/bash
+                    groups: sudo,Admin
+                    append: yes
+- hosts: comp2_srv1 comp2_srv2
+  tasks:
+          - name: Install chrony
+            apt:
+                    pkg:
+                            - chrony
+                            - keepalived
+                            - docker
+                            - docker.io
+                            - pip
+          - name: Deploy docker image
+            become: yes
+            copy:
+                    src: ./Dockerfile
+                    dest: /opt/Dockerfile
+          - name: create nginx folder
+            file:
+                    path: /opt/nginx
+                    state: directory
+          - name: create nginx folder x2
+            file:
+                    path: /opt/nginx/sites-enabled/
+                    state: directory
+          - name: create nginx folder x3
+            file:
+                    path: /opt/nginx/html/
+                    state: directory
+          - name: Deploy nginx file
+            copy:
+                    src: ./nginx/sites-enabled/default
+                    dest: /opt/nginx/sites-enabled/default
+          - name: Deploy nginx file x2
+            copy:
+                    src: ./nginx/html/index.html
+                    dest: /opt/nginx/html/index.html
+          - name: pip docker
+            command: pip install docker 
+          - name: Docker installation
+            community.docker.docker_image:
+                    name: firstver:firstver 
+                    build:
+                            path: /opt/
+                    source: build
+          - name: Docker start
+            community.docker.docker_container:
+                    name: first-app
+                    state: started
+                    image: firstver:firstver
+                    ports:
+                            - "8080:4444"
+          - name: Deploy Configuration for Chrony
+            copy:
+                    src: ./chrony.conf
+                    dest: /etc/chrony/chrony.conf
+- hosts: comp2_srv1
+  tasks:
+          - name: Deploy Configuration for Keepalived
+            copy:
+                    src: ./keepalived_SRV1.conf
+                    dest: /etc/keepalived/keepalived.conf
+- hosts: comp2_srv2
+  tasks:
+          - name: Deploy configuration for Keepalived SRV2
+            copy:
+                    src: ./keepalived_SRV2.conf
+                    dest: /etc/keepalived/keepalived.conf
+- hosts: comp2_srv1 comp2_srv2
+  tasks:
+          - name: Deploy script for VRRP
+            copy:
+                    src: ./ntp_check
+                    dest: /usr/ntp_check
+          - name: Restart configured service chrony
+            service:
+                    name: chronyd
+                    state: restarted
+          - name: Restart configured service keepalived
+            service:
+                    name: keepalived
+                    state: restarted
+- hosts: comp2_srv3
+  tasks:
+          - name: Install Docker-Compose
+            shell: 
+
+
